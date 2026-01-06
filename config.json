@@ -3,10 +3,12 @@
     "SlowMo": "0",
     "DefaultNavigationTimeout": "120000",
     "DefaultTimeout": "60000",
-   
+
     "common info" : {
       "Url" : "https://www.saucedemo.com/",
-      "UserName" : "standard_user",
-      "Password" : "secret_sauce"
+      "ValidUserName" : "standard_user",
+      "ValidPassword" : "secret_sauce",
+      "InvalidUserName": "invalid_user",
+      "InvalidPassword": "bad_password"
     }
    }

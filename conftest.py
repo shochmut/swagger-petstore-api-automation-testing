@@ -1,10 +1,8 @@
 import pytest
 import base64
 
-from Pages.LoginPage import LoginPage
 from Utilities.read_config import AppConfiguration
 from playwright.sync_api import sync_playwright
-from Pages.ProductsListPage import ProductsListPage
 
 
 @pytest.fixture()
@@ -14,7 +12,8 @@ def setup(request):
     base_url = common_info["Url"]
 
     # Browser options
-    headless = eval(configuration["Headless"])  # convert to bool
+    # Parse string boolean safely instead of eval
+    headless = str(configuration["Headless"]).strip().lower() == "true"
     slow_mo = float(configuration["SlowMo"])
     launch_options = {"headless": headless, "slow_mo": slow_mo}
 
@@ -43,23 +42,20 @@ def setup(request):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item):
-    """
-    Extends the PyTest Plugin to take and embed screenshot in html report, whenever test fails.
-    :param item:
-    """
-    screenshot_bytes = ''
-    pytest_html = item.config.pluginmanager.getplugin('html')
+    """Take screenshot and embed it into the HTML report on failure."""
     outcome = yield
     report = outcome.get_result()
-    extra = getattr(report, 'extra', [])
 
-    if report.when == 'call' or report.when == "setup":
-        xfail = hasattr(report, 'wasxfail')
-
-        if report.failed or xfail and "page" in item.funcargs:
+    if report.when in ("setup", "call"):
+        if "setup" in item.funcargs and report.failed:
             page = item.funcargs["setup"]
-
             screenshot_bytes = page.screenshot()
-            extra.append(pytest_html.extras.image(base64.b64encode(screenshot_bytes).decode(), ''))
+            extra = getattr(report, "extra", [])
+            pytest_html = item.config.pluginmanager.getplugin("html")
 
-        report.extras = extra
+            if pytest_html:
+                extra.append(pytest_html.extras.image(
+                    base64.b64encode(screenshot_bytes).decode(), mime_type="image/png"
+                ))
+
+            report.extras = extra
